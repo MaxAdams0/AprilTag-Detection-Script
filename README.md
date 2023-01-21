@@ -1,6 +1,8 @@
 # Apriltag-Detection-Script
 Apriltag detection script for use in [6695](https://github.com/AlphaKnights)'s 2023 FRC Robot. <br>
-Currently there is only a gui-only version for debugging (main.py) but the final version will have a separate file that is terminal-only since the final script will be run on an RPi running Raspbian.
+
+# Usage
+For CLI-only OSs, use `main-CLI.py`, and for OSs with GUIs, use `debug.py`<br>
 
 # Requirements
 * opencv-python
@@ -20,7 +22,13 @@ sudo apt install <package_name>
 [AprilRobotics/apriltag-imgs](https://github.com/AprilRobotics/apriltag-imgs)
 
 # Recources
-[Apriltag Specifics](https://optitag.io/blogs/news/designing-your-perfect-apriltag)
+* [Apriltag Specifics](https://optitag.io/blogs/news/designing-your-perfect-apriltag)
+* [pupil-apriltag Documentation](https://pupil-apriltags.readthedocs.io/en/stable/api.html)
+* [Major Programming Aid - Kazuhito00](https://github.com/Kazuhito00/AprilTag-Detection-Python-Sample)
+
+# Future
+* Modifying variable on-the-fly may be added later, though it may be debug-only
+* Modification of variables may be loaded through a JSON file in the future to separate scripts from variable options.
 
 # Liscence
 Apriltag-Detection-Script is licensed under the [MIT License](https://github.com/MaxAdams0/Apriltag-Detection-Script/blob/main/LICENSE)
