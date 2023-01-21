@@ -1,7 +1,6 @@
-#Apriltag-Detection-Script
-Apriltag detection script for use in 6695's 2023 FRC Robot. <br>
-The main version is intended for use in terminal-only systems like Raspbian, but the debug mode requires a gui system (when it comes).
-
+# Apriltag-Detection-Script
+Apriltag detection script for use in [6695](https://github.com/AlphaKnights)'s 2023 FRC Robot. <br>
+Currently there is only a gui-only version for debugging (main.py) but the final version will have a separate file that is terminal-only since the final script will be run on an RPi running Raspbian.
 
 # Requirements
 * opencv-python
