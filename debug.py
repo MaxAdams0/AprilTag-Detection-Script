@@ -27,10 +27,12 @@ def main():
     # Initializing variables
     args = get_args()
     log_file_number = len(os.listdir('logs/'))
-    logging.basicConfig(filename=f'logs/debug{log_file_number}.log',
-                    format='%(asctime)s %(levelname)-8s %(message)s',
-                    level=logging.DEBUG)
-    log = logging.getLogger()
+    logging.basicConfig(format='[%(asctime)s] [%(levelname)-8s]\n%(message)s\n',
+                    level=logging.DEBUG,
+                    handlers=[
+                        logging.FileHandler(f'logs/debug{log_file_number}.log'),
+                        logging.StreamHandler()
+                    ])
     
     # Initialize Camera
     cam = cv.VideoCapture(args.camera)
@@ -112,10 +114,8 @@ def draw_debug(image, tags):
         cv.putText(image, str(id), (center[0] - 10, center[1] - 10),
                     cv.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 255), 2, cv.LINE_AA)
         
-        log.debug(f'\nid:{id}\ncenter:{center}\ncorners:\n{corners}\n')
-        print(f'\nid:{id}\ncenter:{center}\ncorners:\n{corners}\n')
+        log.debug(f'id:{id}\ncenter:{center}\ncorners:\n{corners}')
         
-
     return image
 
 
