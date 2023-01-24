@@ -27,8 +27,8 @@ sudo apt install <package_name>
 * [Major Programming Aid - Kazuhito00](https://github.com/Kazuhito00/AprilTag-Detection-Python-Sample)
 
 # Future
-* Modifying variable on-the-fly may be added later, though it may be debug-only
-* Modification of variables may be loaded through a JSON file in the future to separate scripts from variable options.
+* Thresholding
+* Adjusting variables through or input system
 
 # Liscence
 Apriltag-Detection-Script is licensed under the [MIT License](https://github.com/MaxAdams0/Apriltag-Detection-Script/blob/main/LICENSE)

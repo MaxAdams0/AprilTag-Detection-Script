@@ -1,10 +1,11 @@
 import cv2 as cv
 from pupil_apriltags import Detector
-import copy
 import argparse
 import logging
 import os
 import keyboard as kb
+import numpy as np
+import time
 
 def get_args():
     # Note: defaults according to documentation
@@ -21,8 +22,8 @@ def get_args():
     parser.add_argument('--decode_sharpening', type=float, default=0.25)
     parser.add_argument('--debug', type=int, default=0)
     # FRC stage variables ================================================
-    # The FRC stage has 8 total Apriltags, 0-7
-    parser.add_argument('--tag_maxim', type=int, default=7)
+    # The FRC stage has 8 total Apriltags, 0-8 (0 is not used)
+    parser.add_argument('--tag_id_list', type=list, default=[1,2,3,4,5,6,7,8])
 
     args = parser.parse_args()
     return args
@@ -52,6 +53,7 @@ def main():
     args.families = 'tag16h5'
     args.quad_decimate = 0.0
     args.quad_sigma = 5.0
+    args.decode_sharpening = 5
 
     # Airtag Detector
     tag_detector = Detector(
@@ -64,19 +66,30 @@ def main():
         debug=args.debug
     )
 
+    elapsed_time = 0
+
     while True:
-        # Get camera data & convert to grayscale
+        start_time = time.time()
+        # Get camera data, save raw image, convert debug and main image to HSV
         ret, image = cam.read()
-        debug_image = copy.deepcopy(image)
-        image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        debug_image = np.copy(image)
+        grayscale_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
         # Detect Apriltags & run logging function
-        tags = tag_detector.detect(image)
+        tags = tag_detector.detect(grayscale_image)
         tag_logger(tags)
-        debug_image = draw_debug(debug_image, tags)
+        debug_image = draw_tags(debug_image, tags)
+        debug_image = draw_ui(debug_image, elapsed_time)
+
+        elapsed_time = time.time() - start_time
+        
+        # Adds videos together to display side-by-side on window; Axis, 1=hor. 0=vert.
+        # Both arrays need to be of the same type
+        grayscale_image = cv.cvtColor(grayscale_image, cv.COLOR_GRAY2BGR)
+        both = np.concatenate((debug_image, grayscale_image), axis=1)
 
         # Display debug window
-        cv.imshow('AprilTag Detector (Debug)', debug_image)
+        cv.imshow('AprilTag Detector (Debug)', both)
         # I have no idea if this works
         key = cv.waitKey(1)
         if key == 27: # esc key
@@ -84,14 +97,14 @@ def main():
     cam.release()
     cv.destroyAllWindows()
 
-def draw_debug(image, tags):
+def draw_tags(image, tags):
     args = get_args()
     for tag in tags:
         # Tag attributes
         id = tag.tag_id
         center = tag.center
         corners = tag.corners
-        if id>args.tag_maxim: break
+        if id not in args.tag_id_list: break
 
         # Tag attributes have diffent type from cv req. arg., conv. to int
         center = (int(center[0]), int(center[1]))
@@ -102,7 +115,6 @@ def draw_debug(image, tags):
 
         # Draw Center
         cv.circle(image, (center[0], center[1]), 5, (0, 0, 255), 2)
-        # To-do: find which corners corrolate to which
         # Draw Box
         cv.line(image, (corner1[0], corner1[1]),
                 (corner2[0], corner2[1]), (255, 0, 0), 2)
@@ -115,7 +127,18 @@ def draw_debug(image, tags):
 
         # Place ID # in drawn box
         cv.putText(image, str(id), (center[0] - 10, center[1] - 10),
-                    cv.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 255), 2,)
+                    cv.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 255), 2)
+
+    return image
+
+def draw_ui(image, elapsed_time):
+    # FPS counter ==============================================================
+    FPS_color = np.ndarray.tolist(image[0,0])
+    # Invert pixel colors
+    for channel in range(len(FPS_color)):
+        FPS_color[channel] = 255-FPS_color[channel]
+    cv.putText(image, f'Frame Time: {round(elapsed_time*1000, 3)}ms', (10,30), 
+                cv.FONT_HERSHEY_SIMPLEX, 0.75, FPS_color, 2)
         
     return image
 
@@ -127,10 +150,9 @@ def tag_logger(tags):
         id = tag.tag_id
         center = tag.center
         corners = tag.corners
-        if id>args.tag_maxim: break
+        if id not in args.tag_id_list: break
         
         log.info(f'\nid:{id}\ncenter:{center}\ncorners:\n{corners}\n')
-
 
 if __name__ == '__main__':
     main()
