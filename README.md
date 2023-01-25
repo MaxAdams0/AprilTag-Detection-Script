@@ -29,6 +29,7 @@ sudo apt install <package_name>
 # Future
 * Thresholding (if beneficial)
 * Adjusting variables through or input system
+* Add blur effect under ui (lowest priority)
 
 # Liscence
 Apriltag-Detection-Script is licensed under the [MIT License](https://github.com/MaxAdams0/Apriltag-Detection-Script/blob/main/LICENSE)

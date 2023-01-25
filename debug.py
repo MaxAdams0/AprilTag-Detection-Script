@@ -7,7 +7,46 @@ import keyboard as kb
 import numpy as np
 import time
 
-def main_debug(args):
+def main():
+    # Create log file and setup logger
+    if not os.path.exists('logs/'):
+        os.mkdir('logs/')
+    log_file_number = len(os.listdir('logs/'))
+    logging.basicConfig(format='[%(asctime)s] [%(levelname)-8s] %(message)s',
+                    level=logging.DEBUG,
+                    handlers=[
+                        logging.FileHandler(f'logs/debug{log_file_number}.log'),
+                        logging.StreamHandler()
+                    ])
+    log = logging.getLogger()
+
+    # Initialize variables and logger
+    args = get_args()
+
+    # Argument adjustments
+    args.camera = 0
+    args.families = 'tag16h5'
+    args.quad_decimate = 0.0
+    args.quad_sigma = 5.0
+    args.decode_sharpening = 5
+    
+    # Initialize Camera
+    cam = cv.VideoCapture(args.camera)
+    while cam is None or not cam.isOpened():
+        log.critical('Camera not detected. Press space to check again.')
+        kb.wait('space')
+
+    # Airtag Detector
+    tag_detector = Detector(
+        families=args.families,
+        nthreads=args.nthreads,
+        quad_decimate=args.quad_decimate,
+        quad_sigma=args.quad_sigma,
+        refine_edges=args.refine_edges,
+        decode_sharpening=args.decode_sharpening,
+        debug=args.debug
+    )
+
     detection_time = 0
     display_time = 0
 
@@ -15,6 +54,8 @@ def main_debug(args):
         start_time = time.time()
 
         ret, image = cam.read()
+        # Image downscaling to make image processing faster
+        # image = cv.resize(image, (int(image.shape[1]/2), int(image.shape[0]/2)))
         debug_image = np.copy(image)
         grayscale_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
@@ -23,8 +64,8 @@ def main_debug(args):
 
         detection_time = time.time() - start_time
 
-        tag_logger(tags, args)
-        debug_image = draw_tags(debug_image, tags, args)
+        tag_logger(tags)
+        debug_image = draw_tags(debug_image, tags)
         debug_image = draw_fps(debug_image, detection_time, display_time)
         
         # Adds videos together to display side-by-side on window; Axis, 1=hor. 0=vert.
@@ -44,8 +85,8 @@ def main_debug(args):
     cam.release()
     cv.destroyAllWindows()
 
-def draw_tags(image, tags, args):
-    args, log = get_args()
+def draw_tags(image, tags):
+    args = get_args()
     for tag in tags:
         # Tag attributes
         id = tag.tag_id
@@ -80,7 +121,9 @@ def draw_tags(image, tags, args):
 
 def draw_fps(image, detection_time, display_time):
     # FPS counter ==============================================================
-    FPS_color = np.ndarray.tolist(image[0,0])
+    w = int(image.shape[1]/10)
+    h = int(image.shape[0]/10)
+    FPS_color = np.ndarray.tolist(image[w,h])
     # Invert pixel colors
     for channel in range(len(FPS_color)):
         FPS_color[channel] = 255-FPS_color[channel]
@@ -89,15 +132,19 @@ def draw_fps(image, detection_time, display_time):
     detection_time = round(detection_time*1000, 3)
     display_time = round(display_time*1000, 3)
     # 'Detection' only includes the image capture, manipulation, and detection
-    cv.putText(image, f'Detection: {detection_time}ms', (10,30), 
+    cv.putText(image, f'Detection: {detection_time}ms', (15,30), 
                 cv.FONT_HERSHEY_SIMPLEX, 0.6, FPS_color, 2)
     # 'Debug' includes logging functions, rendering, and window updates
-    cv.putText(image, f'Debug: {display_time}ms', (10,55), 
+    cv.putText(image, f'Debug: {display_time}ms', (15,55), 
+                cv.FONT_HERSHEY_SIMPLEX, 0.6, FPS_color, 2)
+    cv.putText(image, f'Total: {round(detection_time+display_time, 3)}ms', (15,80), 
                 cv.FONT_HERSHEY_SIMPLEX, 0.6, FPS_color, 2)
         
     return image
 
-def tag_logger(tags, args):
+def tag_logger(tags):
+    args = get_args()
+    log = logging.getLogger()
     for tag in tags:
         # Tag attributes
         id = tag.tag_id
@@ -127,45 +174,7 @@ def get_args():
 
     args = parser.parse_args()
 
-    # Create log file and setup logger
-    if not os.path.exists('logs/'):
-        os.mkdir('logs/')
-    log_file_number = len(os.listdir('logs/'))
-    logging.basicConfig(format='[%(asctime)s] [%(levelname)-8s] %(message)s',
-                    level=logging.DEBUG,
-                    handlers=[
-                        logging.FileHandler(f'logs/debug{log_file_number}.log'),
-                        logging.StreamHandler()
-                    ])
-
-    return args, logging.getLogger()
+    return args
 
 if __name__ == '__main__':
-    # Initialize variables and logger
-    args, log = get_args()
-
-    # Argument adjustments
-    args.camera = 1
-    args.families = 'tag16h5'
-    args.quad_decimate = 0.0
-    args.quad_sigma = 5.0
-    args.decode_sharpening = 5
-    
-    # Initialize Camera
-    cam = cv.VideoCapture(args.camera)
-    while cam is None or not cam.isOpened():
-        log.critical('Camera not detected. Press space to check again.')
-        kb.wait('space')
-
-    # Airtag Detector
-    tag_detector = Detector(
-        families=args.families,
-        nthreads=args.nthreads,
-        quad_decimate=args.quad_decimate,
-        quad_sigma=args.quad_sigma,
-        refine_edges=args.refine_edges,
-        decode_sharpening=args.decode_sharpening,
-        debug=args.debug
-    )
-    
-    main_debug(args)
+    main()
