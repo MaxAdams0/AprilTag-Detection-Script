@@ -27,7 +27,7 @@ sudo apt install <package_name>
 * [Major Programming Aid - Kazuhito00](https://github.com/Kazuhito00/AprilTag-Detection-Python-Sample)
 
 # Future
-* Thresholding
+* Thresholding (if beneficial)
 * Adjusting variables through or input system
 
 # Liscence
