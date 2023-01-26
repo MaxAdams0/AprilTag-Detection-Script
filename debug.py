@@ -24,17 +24,21 @@ def main():
     args = get_args()
 
     # Argument adjustments
-    args.camera = 0
+    args.camera = 1
     args.families = 'tag16h5'
     args.quad_decimate = 0.0
     args.quad_sigma = 5.0
-    args.decode_sharpening = 5
+    args.decode_sharpening = 10
     
     # Initialize Camera
     cam = cv.VideoCapture(args.camera)
     while cam is None or not cam.isOpened():
         log.critical('Camera not detected. Press space to check again.')
         kb.wait('space')
+    # Camaera property adjustments !!!MODIFIES CAMERA DRIVERS!!!
+    # To reset to defaults, reinstall windows drivers. if Linux, idk
+    cam.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+    cam.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
 
     # Airtag Detector
     tag_detector = Detector(
@@ -51,42 +55,46 @@ def main():
     display_time = 0
 
     while True:
-        start_time = time.time()
+        try: 
+            start_time = time.time()
 
-        ret, image = cam.read()
-        # Image downscaling to make image processing faster
-        # image = cv.resize(image, (int(image.shape[1]/2), int(image.shape[0]/2)))
-        debug_image = np.copy(image)
-        grayscale_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+            ret, image = cam.read()
+            # Image downscaling to make image processing faster
+            # image = cv.resize(image, (int(image.shape[1]/2), int(image.shape[0]/2)))
+            debug_image = np.copy(image)
+            grayscale_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
-        # Detect Apriltags & run logging function
-        tags = tag_detector.detect(grayscale_image)
+            # Detect Apriltags & run logging function
+            tags = tag_detector.detect(grayscale_image)
 
-        detection_time = time.time() - start_time
+            detection_time = time.time() - start_time
 
-        tag_logger(tags)
-        debug_image = draw_tags(debug_image, tags)
-        debug_image = draw_fps(debug_image, detection_time, display_time)
-        
-        # Adds videos together to display side-by-side on window; Axis, 1=hor. 0=vert.
-        # Both arrays need to be of the same type
-        grayscale_image = cv.cvtColor(grayscale_image, cv.COLOR_GRAY2BGR)
-        both = np.concatenate((debug_image, grayscale_image), axis=1)
+            #tag_logger(tags)
+            
+            # Adds videos together to display side-by-side on window; Axis, 1=hor. 0=vert.
+            # Both arrays need to be of the same type
+            debug_image = draw_tags(debug_image, tags)
+            grayscale_image = cv.cvtColor(grayscale_image, cv.COLOR_GRAY2BGR)
+            both = np.concatenate((debug_image, grayscale_image), axis=0)
+            # Display debug window
+            both = cv.resize(both, (640,720))
+            both = draw_fps(both, detection_time, display_time)
+            cv.imshow('AprilTag Detector (Debug)', both)
 
-        # Display debug window
-        cv.imshow('AprilTag Detector (Debug)', both)
+            display_time = time.time() - start_time - detection_time
 
-        display_time = time.time() - start_time - detection_time
-
-        # I have no idea if this works
-        key = cv.waitKey(1)
-        if key == 27: # esc key
-            break
+            # I have no idea if this works
+            key = cv.waitKey(1)
+            if key == 27: # esc key
+                break
+        except cv.error as e:
+            log.warning(e)
     cam.release()
     cv.destroyAllWindows()
 
 def draw_tags(image, tags):
     args = get_args()
+
     for tag in tags:
         # Tag attributes
         id = tag.tag_id
@@ -102,43 +110,55 @@ def draw_tags(image, tags):
         corner4 = (int(corners[3][0]), int(corners[3][1]))
 
         # Draw Center
-        cv.circle(image, (center[0], center[1]), 5, (0, 0, 255), 2)
+        cv.circle(image, (center[0], center[1]), 10, (0, 0, 255), 4)
         # Draw Box
         cv.line(image, (corner1[0], corner1[1]),
-                (corner2[0], corner2[1]), (255, 0, 0), 2)
+                (corner2[0], corner2[1]), (255, 0, 0), 6)
         cv.line(image, (corner2[0], corner2[1]),
-                (corner3[0], corner3[1]), (255, 0, 0), 2)
+                (corner3[0], corner3[1]), (255, 0, 0), 6)
         cv.line(image, (corner3[0], corner3[1]),
-                (corner4[0], corner4[1]), (0, 255, 0), 2)
+                (corner4[0], corner4[1]), (0, 255, 0), 6)
         cv.line(image, (corner4[0], corner4[1]),
-                (corner1[0], corner1[1]), (0, 255, 0), 2)
+                (corner1[0], corner1[1]), (0, 255, 0), 6)
 
         # Place ID # in drawn box
         cv.putText(image, str(id), (center[0] - 10, center[1] - 10),
-                    cv.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 255), 2)
+                    cv.FONT_HERSHEY_DUPLEX, 1.5, (0, 0, 255), 2)
 
     return image
 
 def draw_fps(image, detection_time, display_time):
     # FPS counter ==============================================================
-    w = int(image.shape[1]/10)
-    h = int(image.shape[0]/10)
-    FPS_color = np.ndarray.tolist(image[w,h])
+    # Image width and height and channels
+    w = int(image.shape[1])
+    h = int(image.shape[0])
+    c = int(image.shape[2])
+
+    w = int(w/10)
+    h = int(h/10)
+    
+    text_color = np.ndarray.tolist(image[w,h])
+    if text_color[0]+text_color[1]+text_color[2] > 382:
+        text_color = (255,0,0)
+    else:
+        text_color = (0,255,0)
+    """
     # Invert pixel colors
-    for channel in range(len(FPS_color)):
-        FPS_color[channel] = 255-FPS_color[channel]
+    for channel in range(len(FPS_pixel)):
+        FPS_pixel[channel] = 255-FPS_pixel[channel]
+    """
 
     # Convert frame time from seconds to milliseconds
     detection_time = round(detection_time*1000, 3)
     display_time = round(display_time*1000, 3)
     # 'Detection' only includes the image capture, manipulation, and detection
     cv.putText(image, f'Detection: {detection_time}ms', (15,30), 
-                cv.FONT_HERSHEY_SIMPLEX, 0.6, FPS_color, 2)
+                cv.FONT_HERSHEY_SIMPLEX, 0.6, text_color, 2)
     # 'Debug' includes logging functions, rendering, and window updates
     cv.putText(image, f'Debug: {display_time}ms', (15,55), 
-                cv.FONT_HERSHEY_SIMPLEX, 0.6, FPS_color, 2)
+                cv.FONT_HERSHEY_SIMPLEX, 0.6, text_color, 2)
     cv.putText(image, f'Total: {round(detection_time+display_time, 3)}ms', (15,80), 
-                cv.FONT_HERSHEY_SIMPLEX, 0.6, FPS_color, 2)
+                cv.FONT_HERSHEY_SIMPLEX, 0.6, text_color, 2)
         
     return image
 
@@ -152,7 +172,7 @@ def tag_logger(tags):
         corners = tag.corners
         if id not in args.tag_id_list: break
         
-        log.info(f'\nid:{id}\ncenter:{center}\ncorners:\n{corners}\n')
+        # log.info(f'\nid:{id}\ncenter:{center}\ncorners:\n{corners}\n')
 
 def get_args():
     # Note: defaults according to documentation

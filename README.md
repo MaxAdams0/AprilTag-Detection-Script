@@ -26,10 +26,10 @@ sudo apt install <package_name>
 * [pupil-apriltag Documentation](https://pupil-apriltags.readthedocs.io/en/stable/api.html)
 * [Major Programming Aid - Kazuhito00](https://github.com/Kazuhito00/AprilTag-Detection-Python-Sample)
 
-# Future
+# Future; Highest priority at top
+* Hold individual tag location (if past # tags's centers were in the same area ±# pixels)
 * Thresholding (if beneficial)
-* Adjusting variables through or input system
-* Add blur effect under ui (lowest priority)
+* Add blur effect under ui
 
 # Liscence
 Apriltag-Detection-Script is licensed under the [MIT License](https://github.com/MaxAdams0/Apriltag-Detection-Script/blob/main/LICENSE)
