@@ -89,6 +89,9 @@ def main():
                         cv.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
             cv.putText(image, f'Total: {round((detection_time+display_time)*1000, 3)}ms', (15,80), 
                         cv.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+
+            # When I get to multithreading, this will be important
+            # both = np.concatenate((cam1_image, cam2_image), axis=0)
             
             cv.imshow('AprilTag Detector (Debug)', image)
 
