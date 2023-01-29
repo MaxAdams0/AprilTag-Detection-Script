@@ -3,7 +3,6 @@ from pupil_apriltags import Detector
 import argparse
 import logging
 import os
-import numpy as np
 import time
 
 def main():
@@ -23,7 +22,7 @@ def main():
     args = get_args()
 
     # Argument adjustments
-    args.camera = 1
+    args.camera = 0
     args.families = 'tag16h5'
     
     # Initialize Camera
@@ -35,14 +34,25 @@ def main():
 
     # Camera Settings
     cam.set(cv.CAP_PROP_AUTO_EXPOSURE, 3)
+    cam.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+    cam.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
 
     # Airtag Detector
     tag_detector = Detector(
-        families='tag16h5'
+        families='tag16h5',
+        quad_decimate=0,
+        refine_edges=1
     )
 
     detection_time = 0
     display_time = 0
+
+    tag_total = 0
+    time_total = 0
+
+    tag_adjust_level = 50
+    #           center  -------corners---------
+    last_tags = [(0,0),(0,0),(0,0),(0,0),(0,0),0]
 
     while True:
         try: 
@@ -52,11 +62,14 @@ def main():
             if not ret: break
             grayscale_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
             tags = tag_detector.detect(grayscale_image)
+            last_tags = tags
 
             detection_time = time.time() - start_time
    
             # Outline Tags ==================================================================
             for tag in tags:
+                tag_total += 1
+
                 id = tag.tag_id
                 center = tag.center
                 corners = tag.corners
@@ -96,6 +109,12 @@ def main():
             cv.imshow('AprilTag Detector (Debug)', image)
 
             display_time = time.time() - start_time - detection_time
+            time_total += detection_time + display_time
+
+            if time_total > 10:
+                break
+
+            print(tag_total, round(time_total,3),'s')
 
             if cv.waitKey(1) & 0xFF == ord('q'):
                 break
