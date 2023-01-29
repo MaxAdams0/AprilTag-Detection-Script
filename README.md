@@ -1,5 +1,6 @@
 # Apriltag-Detection-Script
-Apriltag detection script for use in [6695](https://github.com/AlphaKnights)'s 2023 FRC Robot. <br>
+~~Apriltag detection script for use in [6695](https://github.com/AlphaKnights)'s 2023 FRC Robot.~~ <br>
+Alpha Knighs will be using [PhotonVision](https://docs.photonvision.org/en/latest/) after recognizing its benefits, this is now a personal project for learning visual recognition.
 
 # Usage
 For CLI-only OSs, use `main-CLI.py`, and for OSs with GUIs, use `debug.py`<br>
